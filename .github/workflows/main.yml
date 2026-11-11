@@ -1,0 +1,38 @@
+name: Build IPA
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Archive (unsigned)
+        run: |
+          xcodebuild archive \
+            -project Kernarium/Kernarium.xcodeproj \
+            -scheme Kernarium \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/Kernarium.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/Kernarium.xcarchive/Products/Applications/*.app Payload/
+          zip -qr Kernarium.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kernarium-ipa
+          path: Kernarium.ipa
